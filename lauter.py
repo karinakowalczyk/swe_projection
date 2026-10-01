@@ -1,4 +1,4 @@
-"""Convergence test: unsteady solid-body rotation with an exact solution (Section 4.3 of the paper).
+"""Convergence test: unsteady solid-body rotation with an exact solution.
 
 A solid-body rotation about an axis tilted against the Earth's rotation axis,
 over topography, for which the exact solution is known at all times. The

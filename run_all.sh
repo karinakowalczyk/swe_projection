@@ -5,9 +5,6 @@
 #   ./run_all.sh              all simulations and plots (serial)
 #   NP=12 ./run_all.sh        same, with 12 MPI processes per simulation
 #
-# The timing runs (Section 4.4) are not included; the commands are at the end
-# of this script, commented out.
-#
 # Run inside the Firedrake virtual environment.
 
 set -e
@@ -42,7 +39,6 @@ echo "Done. Figures are in figures/, simulation output in output/."
 
 # Timings (Section 4.4): Williamson 5, level 6, dt = 1200 s, 2 advection cycles,
 # on 6, 12 and 15 cores. Not run by this script; the results depend on the machine.
-# The separate output directory keeps these runs from overwriting the results above.
 #
 # for n in 6 12 15; do
 #     out=output/timings/${n}cores

@@ -1,4 +1,4 @@
-"""Williamson 5 test: zonal flow over an isolated mountain (Section 4.1 of the paper).
+"""Williamson 5 test: zonal flow over an isolated mountain.
 
 A geostrophically balanced zonal flow is perturbed by a conical mountain,
 which generates Rossby waves. The test checks energy and enstrophy

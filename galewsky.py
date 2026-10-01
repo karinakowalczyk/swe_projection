@@ -16,8 +16,7 @@ Usage:
     python galewsky.py --help     # all options and their defaults
 
 Output in <output>/galewsky/L<ref_level>_dt<dt>_N<n_adv_cycles>/:
-Galewsky.pvd for ParaView (the field "delta D" is D(t) - D(0)), with
---latlon also Galewsky_lonlat.pvd and D_pert.pvd on a lon-lat grid, and
+Galewsky.pvd for ParaView, with --latlon also Galewsky_lonlat.pvd on a lon-lat grid, and
 diagnostics.txt with the columns t, energy, enstrophy, div_rms.
 """
 import argparse
