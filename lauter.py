@@ -25,7 +25,7 @@ from firedrake import *
 from firedrake.petsc import PETSc
 
 from swe_projection.common import R0, OMEGA, G, DAY, sphere_mesh
-from swe_projection.output import start_diagnostics, write_diagnostics
+from swe_projection.output import Progress, save_run_info, start_diagnostics, write_diagnostics
 from swe_projection.stepper import SWEWithProjection
 
 parser = argparse.ArgumentParser(description="Lauter unsteady solid-body rotation: convergence test")
@@ -38,6 +38,7 @@ args, _ = parser.parse_known_args()  # unknown options (e.g. -log_view) are left
 assert len(args.ref_levels) == len(args.dts), "need one dt per refinement level"
 out_dir = os.path.join(args.output, "lauter")
 os.makedirs(out_dir, exist_ok=True)
+save_run_info(out_dir, args, COMM_WORLD)
 
 Omega = Constant(OMEGA)
 g = Constant(G)
@@ -91,7 +92,7 @@ if args.compute_ref:
 PETSc.Sys.Print("uref, dref =", uref, dref)
 
 for refinement_level, dt in zip(args.ref_levels, args.dts):
-    PETSc.Sys.Print(f"START test for ref_level{refinement_level} with dt = {dt}.")
+    progress = Progress(f"Lauter, level {refinement_level}, dt = {dt:g} s", args.T_days*DAY)
 
     mesh = sphere_mesh(refinement_level)
     x = SpatialCoordinate(mesh)
@@ -131,6 +132,7 @@ for refinement_level, dt in zip(args.ref_levels, args.dts):
     u_error = norm(SWE_stepper_2.un - u_expr)/uref
     D_error = norm(SWE_stepper_2.Dplusb - D_expr)/dref
     write_diagnostics(err_file, (t, u_error, D_error), mesh.comm)
+    progress.update(t)
 
     dumpt = 3600.
     tdump = 0.
@@ -140,10 +142,9 @@ for refinement_level, dt in zip(args.ref_levels, args.dts):
 
         t += dt
         tdump += dt
+        progress.step(t)
 
         if tdump > dumpt - dt*0.5:
-            PETSc.Sys.Print("t =", t)
-
             SWE_stepper_2.compute_Courant()
             SWE_stepper_2.compute_vorticity()
             out_file.write(SWE_stepper_2.Dplusb, SWE_stepper_2.un, SWE_stepper_2.Courant,
@@ -157,5 +158,8 @@ for refinement_level, dt in zip(args.ref_levels, args.dts):
             u_error = norm(SWE_stepper_2.un - u_exact)/uref
             D_error = norm(SWE_stepper_2.Dplusb - D_exact)/dref
             write_diagnostics(err_file, (t, u_error, D_error), mesh.comm)
+            progress.update(t)
 
             tdump -= dumpt
+
+    progress.finish()

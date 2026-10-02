@@ -23,12 +23,11 @@ import argparse
 from pathlib import Path
 
 from firedrake import *
-from firedrake.petsc import PETSc
 
 from swe_projection.common import DAY, sphere_mesh
 from swe_projection.galewsky_utils import velocity_expression, depth_expression
 from swe_projection.lonlat_plot_utils import get_V_ll_rect, sphere_to_latlongrect, sphere_to_latlongrect_vec
-from swe_projection.output import start_diagnostics, write_diagnostics
+from swe_projection.output import Progress, save_run_info, start_diagnostics, write_diagnostics
 from swe_projection.stepper import SWEWithProjection
 
 parser = argparse.ArgumentParser(description="Galewsky barotropic instability test")
@@ -40,6 +39,9 @@ parser.add_argument("--dumpt", type=float, default=3600., help="output interval 
 parser.add_argument("--latlon", action="store_true", help="also write output on a lon-lat grid")
 parser.add_argument("--output", default="output", help="base directory for the output")
 args, _ = parser.parse_known_args()  # unknown options (e.g. -log_view) are left for PETSc
+
+progress = Progress(f"Galewsky, level {args.ref_level}, dt = {args.dt:g} s, N = {args.n_adv_cycles}",
+                    args.T_days*DAY)
 
 H = Constant(10000.)  # reference depth Dbar, equal to the mean depth H0 of the initial state
 
@@ -62,6 +64,7 @@ SWE_stepper_2 = SWEWithProjection(mesh_sphere, dtc, u_expr, D_expr, H, second_or
 # Output
 out_dir = Path(args.output) / f"galewsky/L{args.ref_level}_dt{dt:g}_N{args.n_adv_cycles}"
 out_dir.mkdir(parents=True, exist_ok=True)
+save_run_info(out_dir, args, mesh_sphere.comm)
 out_file = VTKFile(out_dir / "Galewsky.pvd")
 
 if args.latlon:
@@ -103,14 +106,18 @@ def write_output(t):
 t = 0.0
 tdump = 0.
 write_output(t)
+progress.update(t)
 
 while t < T - 0.5*dt:
     SWE_stepper_2.step(SWE_stepper_1)
 
     t += dt
     tdump += dt
-    PETSc.Sys.Print("t = ", t)
+    progress.step(t)
 
     if tdump > args.dumpt - dt*0.5:
         write_output(t)
+        progress.update(t)
         tdump -= args.dumpt
+
+progress.finish()
