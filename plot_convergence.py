@@ -1,7 +1,9 @@
-"""Convergence plot for the Lauter test, Example 3 in https://doi.org/10.1016/j.jcp.2005.04.022.
+"""Convergence plot for the Lauter test.
 
 Reads the normalised errors written by lauter.py (output/lauter/errors_L<level>.txt)
-and plots the errors at the final time.
+and plots the errors at the final time against the mesh size h = 2^-level. The
+figure is made at 0.95 times the text width; include it with
+\\includegraphics[width=0.95\\linewidth]{...} so that its fonts match the text.
 """
 import argparse
 import os
@@ -9,113 +11,40 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
+from swe_projection.plot_style import COLORS, add_style_args, setup
+
 parser = argparse.ArgumentParser(description="Convergence plot for the Lauter test")
 parser.add_argument("--ref_levels", type=int, nargs="+", default=[3, 4, 5, 6], help="mesh refinement levels to plot")
+add_style_args(parser)
 args, _ = parser.parse_known_args()
-refinement_levels = args.ref_levels
-
-
-def create_convergence_plot(h, u_errors, D_errors, figsize=(6, 6)):
-    """Plot e_u (top) and e_D (bottom) against the mesh size h, with an h^2 reference line."""
-    plt.style.use('seaborn-v0_8-paper')
-    fig, axs = plt.subplots(2, 1, figsize=figsize)
-
-    colors = ['#0077bb',  # blue
-              '#ee7733']  # orange
-
-    for ax in axs:
-        # Major grid lines, minor grid lines and ticks only on the x-axis
-        ax.grid(True, which='major', color='#E5E5E5', linestyle='-', linewidth=0.5)
-        ax.grid(True, which='minor', axis='x', color='#F2F2F2', linestyle='-', linewidth=0.3)
-        ax.set_axisbelow(True)
-        ax.xaxis.set_minor_locator(plt.LogLocator(subs='all'))
-        ax.yaxis.set_minor_locator(plt.NullLocator())
-
-        for spine in ax.spines.values():
-            spine.set_linewidth(0.5)
-        ax.tick_params(axis='both', labelsize=9)
-
-    # Velocity errors
-    axs[0].loglog(h, u_errors,
-                  color=colors[0],
-                  marker='o',
-                  markersize=4,
-                  linewidth=1.0,
-                  label=r"$e_{\mathrm{u}}$")
-
-    axs[0].loglog(h, 1e-1 * h ** 2,
-                  color=colors[1],
-                  linewidth=1.0,
-                  linestyle='--',
-                  label=r"$h^2$")
-
-    for level, x, y in zip(refinement_levels, h, u_errors):
-        axs[0].annotate(f'L{level}',
-                        (x, y),
-                        xytext=(5, 7),
-                        textcoords='offset points',
-                        fontsize=8,
-                        bbox=dict(facecolor='white',
-                                  edgecolor='none',
-                                  alpha=0.7,
-                                  pad=0.1))
-
-    # Errors of D + b
-    axs[1].loglog(h, D_errors,
-                  color=colors[0],
-                  marker='o',
-                  markersize=4,
-                  linewidth=1.0,
-                  label=r"$e_D$")
-
-    axs[1].loglog(h, 1e-2 * h ** 2,
-                  color=colors[1],
-                  linewidth=1.0,
-                  linestyle='--',
-                  label=r"$h^2$")
-
-    for level, x, y in zip(refinement_levels, h, D_errors):
-        axs[1].annotate(f'L{level}',
-                        (x, y),
-                        xytext=(5, -7),
-                        textcoords='offset points',
-                        fontsize=9,
-                        bbox=dict(facecolor='white',
-                                  edgecolor='none',
-                                  alpha=0.7,
-                                  pad=0.1))
-
-    axs[0].set_xlabel(r'$\log h$', fontsize=9)
-    axs[0].set_ylabel(r'$\log e_u$', fontsize=9)
-    axs[1].set_xlabel(r'$\log h$', fontsize=9)
-    axs[1].set_ylabel(r'$\log e_D$', fontsize=9)
-
-    for ax in axs:
-        legend = ax.legend(fontsize=9,
-                           frameon=True,
-                           edgecolor='gray',
-                           fancybox=False,
-                           borderaxespad=1)
-        legend.get_frame().set_linewidth(0.5)
-
-    plt.suptitle(r"$L^2$-errors after $T = 1$d",
-                 fontsize=9)
-
-    plt.tight_layout()
-    return fig, axs
-
-
-h = 2.0 ** (-np.array(refinement_levels))
+TEXTWIDTH = setup(args)
+levels = args.ref_levels
 
 # Errors at the final time (last row; columns t, e_u, e_D)
-final = np.array([np.loadtxt(f"output/lauter/errors_L{level}.txt", ndmin=2)[-1]
-                  for level in refinement_levels])
-u_errors = final[:, 1]
-D_errors = final[:, 2]
+final = np.array([np.loadtxt(f"output/lauter/errors_L{level}.txt", ndmin=2)[-1] for level in levels])
+e_u, e_D = final[:, 1], final[:, 2]
+h = 2.0**(-np.array(levels))
 
-fig, axs = create_convergence_plot(h, u_errors, D_errors)
+fig, axs = plt.subplots(2, 1, figsize=(0.95*TEXTWIDTH, 0.8*TEXTWIDTH))
+# level labels above the curve for e_u, below it for e_D (where h^2 lies above)
+for ax, e, ref, name, dy in ((axs[0], e_u, 1e-1, r"e_{\mathbf{u}}", 5),
+                             (axs[1], e_D, 1e-2, r"e_D", -13)):
+    ax.loglog(h, e, "o-", color=COLORS[5], markersize=3.5, label=rf"${name}$")
+    ax.loglog(h, ref*h**2, "--", color=COLORS[6], label=r"$h^2$")
+    for level, x, y in zip(levels, h, e):
+        ax.annotate(f"L{level}", (x, y), xytext=(5, dy), textcoords="offset points",
+                    fontsize=args.fontsize - 1)
+    ax.margins(x=0.08, y=0.25)  # room for the level labels
+    # ticks at the mesh sizes h = 2^-level of the levels used
+    ax.set_xticks(h, [rf"$2^{{-{level}}}$" for level in levels])
+    ax.xaxis.set_minor_locator(plt.NullLocator())
+    ax.set_xlabel(r"$h$")
+    ax.set_ylabel(rf"${name}$")
+    ax.grid(True, which="major", color="#E5E5E5", linewidth=0.5)
+    ax.legend(frameon=True, edgecolor="gray", fancybox=False).get_frame().set_linewidth(0.5)
+fig.suptitle(r"$L^2$-errors after $T = 1\,\mathrm{d}$")
+fig.tight_layout(pad=0.3)
 
 os.makedirs("figures/Lauter", exist_ok=True)
-fig.savefig("figures/Lauter/convergence-plot.pdf", dpi=300, bbox_inches='tight', format='pdf')
-fig.savefig("figures/Lauter/convergence-plot.png", dpi=300, bbox_inches='tight')
-plt.show()
+fig.savefig("figures/Lauter/convergence-plot.pdf")
+print("Figure written to figures/Lauter/convergence-plot.pdf")

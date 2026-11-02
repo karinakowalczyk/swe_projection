@@ -85,9 +85,9 @@ class SWEWithProjection:
         def perp(u):
             return cross(outward_normals, u)
 
-        # Courant number per cell K: (dt/N)/|K| times the inflow through the
-        # boundary of K, i.e. the effective Courant number of the advection
-        # sub-steps
+        # Courant number C per cell K: dt/|K| times the inflow through the
+        # boundary of K, for the full time step dt; with N advection subcycles
+        # each sub-step has Courant number C/N
         def both(u):
             return 2*avg(u)
 
@@ -96,7 +96,7 @@ class SWEWithProjection:
         v = TestFunction(self.DG0)
         phi = TrialFunction(self.DG0)
         self.courant_lhs_form = phi * v * dx
-        self.courant_rhs_form = (self.dtc/self.n_adv_cycles) * (both(unn * v) * dS)
+        self.courant_rhs_form = self.dtc * (both(unn * v) * dS)
         self.Courant = Function(self.DG0, name="Courant")
 
         # Relative vorticity q = curl u, and potential vorticity with
