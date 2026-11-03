@@ -32,6 +32,7 @@ first-order predictor to compute the advecting velocity.
 | `lauter.py` | Läuter unsteady solid-body rotation: convergence test |
 | `plot_stability.py` | Energy, enstrophy and divergence plots (Williamson 5 or Galewsky) |
 | `plot_convergence.py` | Convergence plot (Läuter) |
+| `plot_fields.py` | Lon-lat plots of the fields (Williamson 5 and Galewsky, level 6) |
 | `run_all.sh` | Runs all test cases and plots |
 
 The references for the test cases are given at the top of each test script.
@@ -78,7 +79,12 @@ The plot scripts read this output and write figures to `figures/`:
 ```bash
 python plot_stability.py --test=williamson5    # or --test=galewsky
 python plot_convergence.py
+python plot_fields.py      # needs the --latlon output of the level 6 runs with 2 subcycles
 ```
+
+The figures are made at their printed size for a text width of 390 pt and a
+12 pt font (`--textwidth` and `--fontsize` change this). If LaTeX is installed,
+it typesets all text in the figures.
 
 ## Running all tests
 
@@ -104,3 +110,7 @@ prints its configuration at the start and its progress at every output time.
 
 The script also contains, commented out, the commands for timing runs with
 PETSc's `-log_view`.
+
+## License
+
+This code is released under the MIT License; see [LICENSE](LICENSE).
